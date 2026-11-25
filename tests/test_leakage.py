@@ -57,6 +57,15 @@ def test_rolling_mean_excludes_today(feats):
         assert feats.set_index("dteday").cnt_roll_7[date] == pytest.approx(expected)
 
 
+def test_rolling_14_excludes_today(feats):
+    """cnt_roll_14 at 2012-03-01 must be mean of cnt on 2012-02-16..2012-02-29 (14 days).
+
+    Literal computed by hand: 3645.285714285714
+    """
+    actual = feats.set_index("dteday").cnt_roll_14[pd.Timestamp("2012-03-01")]
+    assert actual == pytest.approx(3645.285714285714)
+
+
 def test_no_missing_values(feats):
     assert feats[feature_columns(feats)].isna().sum().sum() == 0
 
