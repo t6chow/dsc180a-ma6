@@ -76,7 +76,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     # into a 14-day lag when cnt_roll_14 raised LAG_WARMUP.
     out["cnt_lag_7"] = out[TARGET].shift(7)
     # 7-day rolling mean of the 7 days prior (strictly before today).
-    out["cnt_roll_7"] = out[TARGET].shift(1).rolling(7).mean()
+    out["cnt_roll_7"] = out[TARGET].rolling(7).mean()
     # 14-day rolling mean of the 14 days prior: shift(1) excludes today, so
     # the window is d-14..d-1. The first 14 rows lack a full window and are
     # dropped by dropna.

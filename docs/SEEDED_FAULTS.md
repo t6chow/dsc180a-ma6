@@ -81,3 +81,59 @@ FAILED tests/test_leakage.py::test_no_forbidden_features - AssertionError: fo...
 tests green) and `make test` gave `17 passed in 0.97s`.
 **Turns to fix: 2** (one Edit, one `make test`). The assertion message
 names the column, so there was nothing to diagnose.
+
+## Fault 2: `.shift(1)` deleted from `cnt_roll_7`
+
+**Change** (`src/features.py`, `build_features`). The rolling mean now
+includes today's count, which is the target:
+
+```diff
+-    out["cnt_roll_7"] = out[TARGET].shift(1).rolling(7).mean()
++    out["cnt_roll_7"] = out[TARGET].rolling(7).mean()
+```
+
+**Hook stderr** (as delivered; the hook's `tail -20` cut it to the end of
+the `feats` repr):
+
+```
+PostToolUse:Edit hook blocking error from command: "${CLAUDE_PROJECT_DIR}/.claude/hooks/check_leakage.sh": [${CLAUDE_PROJECT_DIR}/.claude/hooks/check_leakage.sh]: Leakage tests failed after editing /Users/terranchow/Desktop/dsc180a/bikeshare-open/src/features.py:
+[700 rows x 29 columns]
+
+    def test_rolling_mean_excludes_today(feats):
+        """cnt_roll_7 must be the mean of the 7 calendar days *before* today."""
+        by_date = feats.set_index("dteday")[TARGET]
+        date = feats.dteday.iloc[200]
+        window = [date - pd.Timedelta(days=k) for k in range(1, 8)]
+        if all(d in by_date.index for d in window):
+            expected = sum(by_date[d] for d in window) / 7
+>           assert feats.set_index("dteday").cnt_roll_7[date] == pytest.approx(expected)
+E           assert np.float64(4389.428571428572) == 4240.714285714285 ± 0.00424071
+E             
+E             comparison failed
+E             Obtained: 4389.428571428572
+E             Expected: 4240.714285714285 ± 0.00424071
+
+tests/test_leakage.py:73: AssertionError
+======================================= short test summary info ========================================
+FAILED tests/test_leakage.py::test_rolling_mean_excludes_today - assert np.float64(4389.428571428572)...
+1 failed, 8 passed in 0.27s
+```
+
+**Red test output** (`python -m pytest tests/ -q --tb=line`):
+
+```
+..........F......                                                        [100%]
+=================================== FAILURES ===================================
+E   assert np.float64(4389.428571428572) == 4240.714285714285 ± 0.00424071
+      
+      comparison failed
+      Obtained: 4389.428571428572
+      Expected: 4240.714285714285 ± 0.00424071
+/Users/terranchow/Desktop/dsc180a/bikeshare-open/tests/test_leakage.py:73: assert np.float64(4389.428571428572) == 4240.714285714285 ± 0.00424071
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_rolling_mean_excludes_today - assert np.fl...
+1 failed, 16 passed in 0.98s
+```
+
+Only one test catches this, and it checks a single row (`iloc[200]`) inside an
+`if` that would skip the assertion without failing if that row's window had a gap.
