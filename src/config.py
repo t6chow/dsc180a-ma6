@@ -45,6 +45,24 @@ UNVERIFIED_COLS = {"cnt_2d_bfr"}
 # What feature_columns() and the tests actually enforce.
 FORBIDDEN = LEAKAGE_COLS | TIME_INDEX_COLS | UNVERIFIED_COLS
 
+# --- Three ways a raw column is allowed in -----------------------------
+
+# 4. Passthrough: same-day weather, fed to the model as-is.
+PASSTHROUGH_COLS = {"temp", "atemp", "hum", "windspeed"}
+
+# 5. Encoded: raw inputs that src/features.py turns into model features
+#    (calendar terms, is_holiday, is_workday, weather_severity); strings or
+#    dates, so never fed directly.
+ENCODED_COLS = {"dteday", "holiday", "workday", "weather"}
+
+# 6. Redundant: string labels whose information dteday already supplies
+#    (month_sin/month_cos, dayofweek). Unused.
+REDUNDANT_COLS = {"season", "mnth", "weekday"}
+
+# Every raw column must be in exactly one set above;
+# tests/test_contract.py fails on any column that is not.
+CLASSIFIED = FORBIDDEN | PASSTHROUGH_COLS | ENCODED_COLS | REDUNDANT_COLS
+
 # Temporal split: train on 2011, validate on H1 2012, test on H2 2012.
 TRAIN_END = "2011-12-31"
 VALID_END = "2012-06-30"
