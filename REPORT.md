@@ -163,9 +163,15 @@ Model: qwen3.5:9b via Ollama (64k context) wrote the Exercise 1 failing test; sw
   `transform` and `compare` Makefile targets.
 - `.claude/skills/run-pipeline/` (`SKILL.md`, `delta.py`).
 - Documents: `docs/SEEDED_FAULTS.md` (all pasted output is from real runs),
-  `docs/AUDIT.md` except the verdict, the 2026-11-26 lines in
-  `docs/DECISIONS.md` (wording; the decisions are the author's), CLAUDE.md
-  additions, this report's prose.
+  `docs/AUDIT.md` except the verdict, the wording of the 2026-11-26 lines in
+  `docs/DECISIONS.md`, CLAUDE.md additions, this report's prose.
+- Agent decisions (dated 2026-11-26 lines in `docs/DECISIONS.md`):
+
+  | Decision | DECISIONS.md line begins |
+  |---|---|
+  | Classify every raw column in three allowed sets | "Classify every raw column" |
+  | Fault 3: test the weather guard, not just restore it | "Seeded fault 3" |
+  | Leave `test_rolling_mean_excludes_today` as is | "Leave `test_rolling_mean_excludes_today`" |
 - Reviewers: the `leakage-auditor` subagent audited d52e32b (PASS) and Gavin's
   repo (`docs/AUDIT.md`). `agent/audit.py` with `claude-opus-5-5` audited this
   repo (`reports/audit.jsonl`).
@@ -176,10 +182,7 @@ Model: qwen3.5:9b via Ollama (64k context) wrote the Exercise 1 failing test; sw
 |---|---|
 | Ex 1 feature `cnt_roll_14`, and the `cnt_lag_7` fix | "Ex 1 feature `cnt_roll_14`" |
 | Keep `cnt_roll_14` despite the HGB drop | "KEEP `cnt_roll_14`" |
-| Classify every raw column in three allowed sets | "Classify every raw column" |
-| Fault 3: test the weather guard, not just restore it | "Seeded fault 3" |
 | Fault 4: both, hook chosen by author (PreToolUse Bash hook + SHA-256 pin) | "Seeded fault 4" |
-| Leave `test_rolling_mean_excludes_today` as is | "Leave `test_rolling_mean_excludes_today`" |
 | Keep same-day weather; report as a nowcast | "`agent/audit.py` (claude-opus-5-5) flagged" |
 | Ex 3 verdict on Gavin's repo | "Ex 3 peer audit" |
 | Ex 4: stay with untransformed ridge | "Ex 4 (target transforms" |
