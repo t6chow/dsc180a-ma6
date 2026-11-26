@@ -263,9 +263,35 @@ test set is gone, so test scores would improve.
 **What would catch it.** A deny rule can only stop the write routes the
 harness recognises, and only inside Claude Code. The dependable check is on
 the data, not the tool: pin the raw file's SHA-256 in `src/config.py` and
-fail the test suite (and so the hook and `make test`) whenever the bytes
-change, by any route, agent or human. It catches the change after the fact
+fail `make test` whenever the bytes change, by any route, agent or human.
+(The PostToolUse hook would not see it: it fires only on edits to
+`src/*.py` and runs only `tests/test_leakage.py`.) It catches the change after the fact
 rather than preventing it, but nothing downstream can trust a modified file
 without it failing. `git status` on `data/raw/` does the same job in review
 but nothing enforces it. A PreToolUse Bash hook matching `data/raw` would
 block earlier, but it is easy to evade with variables, `cd`, or `python -c`.
+
+**Fix (implemented):** `RAW_SHA256` in `src/config.py` and
+`test_raw_csv_is_unmodified` in `tests/test_contract.py`. Real repo:
+`make test` gives `20 passed in 1.03s`. Red run with the fix copied into the
+tampered clone:
+
+```
+F...................                                                     [100%]
+=================================== FAILURES ===================================
+E   AssertionError: bike_daily.csv has changed: sha256 a93dc1924f67db7e52ed954327dd910a29bfe8a248dc36bc34f0b734b68c96e1
+    assert 'a93dc1924f67...0b734b68c96e1' == 'a6bed1577f6e...0c86a0b5ad9dc'
+      
+      - a6bed1577f6e4de56dcfae6d8315985073cc0ad3446c8c99ed60c86a0b5ad9dc
+      + a93dc1924f67db7e52ed954327dd910a29bfe8a248dc36bc34f0b734b68c96e1
+/private/tmp/f4-UM7G/clone/tests/test_contract.py:31: AssertionError: bike_daily.csv has changed: sha256 a93dc1924f67db7e52ed954327dd910a29bfe8a248dc36bc34f0b734b68c96e1
+=========================== short test summary info ============================
+FAILED tests/test_contract.py::test_raw_csv_is_unmodified - AssertionError: b...
+1 failed, 19 passed in 0.98s
+```
+
+The Sandy deletion that passed 19/19 now fails. Limits: it detects the
+change but does not prevent it, and it runs on `make test`, not on the
+hook, so it relies on the CLAUDE.md rule to run `make test` before claiming
+anything works. **Turns to fix: 4** (config edit, test edit, imports + green
+run, red run in the clone).

@@ -1,9 +1,11 @@
 """Guard rails on the ingest contract and the trained model's behaviour."""
+import hashlib
+
 import pandas as pd
 import pytest
 from sklearn.metrics import r2_score
 
-from src.config import LAG_WARMUP, TARGET
+from src.config import LAG_WARMUP, RAW, RAW_SHA256, TARGET
 from src.features import (
     build_features, encode_weather, feature_columns, reindex_to_calendar,
 )
@@ -19,6 +21,14 @@ def raw():
 @pytest.fixture(scope="module")
 def feats(raw):
     return build_features(raw)
+
+
+def test_raw_csv_is_unmodified():
+    """The raw file must be byte-identical to the committed copy. Deleting one
+    row (say, Hurricane Sandy) passes every shape and row-loss check; only
+    the bytes give it away."""
+    digest = hashlib.sha256(RAW.read_bytes()).hexdigest()
+    assert digest == RAW_SHA256, f"{RAW.name} has changed: sha256 {digest}"
 
 
 def test_every_raw_column_is_classified(raw):
