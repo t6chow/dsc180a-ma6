@@ -73,7 +73,12 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     # If you add a longer lag, raise LAG_WARMUP in src/config.py.
     out["cnt_lag_1"] = out[TARGET].shift(1)
     out["cnt_lag_7"] = out[TARGET].shift(LAG_WARMUP)
-    out["cnt_roll_7"] = out[TARGET].shift(1).rolling(LAG_WARMUP).mean()
+    # 7-day rolling mean of the 7 days prior (strictly before today).
+    out["cnt_roll_7"] = out[TARGET].shift(1).rolling(7).mean()
+    # 14-day rolling mean of the 14 days prior. shift(1) aligns on calendar
+    # days so the 14-day window lands exactly on d-16..d-3; we then dropna
+    # for the first 14 rows where a full window is unavailable.
+    out["cnt_roll_14"] = out[TARGET].shift(1).rolling(14).mean()
 
     return out.dropna().reset_index(drop=True)
 
