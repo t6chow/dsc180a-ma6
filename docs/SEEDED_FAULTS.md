@@ -76,3 +76,8 @@ E   AssertionError: forbidden columns in feature set: {'registered'}
 FAILED tests/test_leakage.py::test_no_forbidden_features - AssertionError: fo...
 1 failed, 16 passed in 0.99s
 ```
+
+**Fix:** revert the line. The hook ran silently on the fix Edit (leakage
+tests green) and `make test` gave `17 passed in 0.97s`.
+**Turns to fix: 2** (one Edit, one `make test`). The assertion message
+names the column, so there was nothing to diagnose.
