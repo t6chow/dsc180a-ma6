@@ -182,7 +182,7 @@ Model: qwen3.5:9b via Ollama (64k context) wrote the Exercise 1 failing test; sw
 |---|---|
 | Ex 1 feature `cnt_roll_14`, and the `cnt_lag_7` fix | "Ex 1 feature `cnt_roll_14`" |
 | Keep `cnt_roll_14` despite the HGB drop | "KEEP `cnt_roll_14`" |
-| Fault 4: both, hook chosen by author (PreToolUse Bash hook + SHA-256 pin) | "Seeded fault 4" |
+| Fault 4: SHA-256 pin first (c758fd6), PreToolUse Bash hook added later (a36feab); both stay | "Seeded fault 4" |
 | Keep same-day weather; report as a nowcast | "`agent/audit.py` (claude-opus-5-5) flagged" |
 | Ex 3 verdict on Gavin's repo | "Ex 3 peer audit" |
 | Ex 4: stay with untransformed ridge | "Ex 4 (target transforms" |
