@@ -1,0 +1,78 @@
+# Seeded faults
+
+Each fault was introduced on purpose with the agent's Edit tool, so the
+PostToolUse hook (`.claude/hooks/check_leakage.sh`, which re-runs
+`tests/test_leakage.py` after any edit to `src/*.py`) fired exactly as it
+would on a real mistake. Each fault and its fix are separate commits. All
+output below is pasted from the real runs, not reconstructed.
+
+"Turns to fix" counts agent tool calls from first seeing the red output to
+a green `make test`.
+
+## Exercise 1: the failing feature test (b8d5b73)
+
+The `cnt_roll_14` test was committed before the feature existed. Red run at
+b8d5b73 (`python -m pytest tests/test_leakage.py -q --tb=line`):
+
+```
+.....F..                                                                 [100%]
+=================================== FAILURES ===================================
+E   AttributeError: 'DataFrame' object has no attribute 'cnt_roll_14'. Did you mean: 'cnt_roll_7'?
+/Users/terranchow/Desktop/dsc180a/bikeshare-open/.venv/lib/python3.12/site-packages/pandas/core/generic.py:6194: AttributeError: 'DataFrame' object has no attribute 'cnt_roll_14'. Did you mean: 'cnt_roll_7'?
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_rolling_14_excludes_today - AttributeError...
+1 failed, 7 passed in 0.23s
+```
+
+8b18548 made it pass, and in doing so silently turned `cnt_lag_7` into a
+14-day lag that no test covered; d52e32b fixed it and added the test that
+would have caught it.
+
+## Fault 1: a forbidden column in `feature_columns`
+
+**Change** (`src/features.py`, `feature_columns`):
+
+```diff
+-    return [c for c in numeric if c not in FORBIDDEN]
++    return [c for c in numeric if c not in FORBIDDEN - {"registered"}]
+```
+
+**Hook stderr**, returned to the agent immediately after the Edit (as
+delivered; the harness elided the middle of the `feats` repr):
+
+```
+PostToolUse:Edit hook blocking error from command: "${CLAUDE_PROJECT_DIR}/.claude/hooks/check_leakage.sh": [${CLAUDE_PROJECT_DIR}/.claude/hooks/check_leakage.sh]: Leakage tests failed after editing /Users/terranchow/Desktop/dsc180a/bikeshare-open/src/features.py:
+feats =         dteday  instant  season      yr  ... cnt_lag_1 cnt_lag_7   cnt_roll_7  cnt_roll_14
+0   2011-01-17     17.0  WI...286
+699 2012-12-31    731.0  WINTER  2012.0  ...    1796.0     920.0  1531.428571  2672.571429
+
+[700 rows x 29 columns]
+
+    def test_no_forbidden_features(feats):
+        """Guards the gate, not the data: feature_columns() excludes FORBIDDEN by
+        construction, so this cannot discover a *new* leaky column. What it
+        catches is someone editing feature_columns() or FORBIDDEN -- which is
+        exactly the fault the Step 7 hook demonstrates."""
+        cols = set(feature_columns(feats))
+>       assert not (cols & FORBIDDEN), f"forbidden columns in feature set: {cols & FORBIDDEN}"
+E       AssertionError: forbidden columns in feature set: {'registered'}
+E       assert not ({'atemp', 'cnt_lag_1', 'cnt_lag_7', 'cnt_roll_14', 'cnt_roll_7', 'dayofweek', ...} & {'casual', 'cnt', 'cnt_2d_bfr', 'days_since_2011', 'instant', 'registered', ...})
+
+tests/test_leakage.py:31: AssertionError
+======================================= short test summary info ========================================
+FAILED tests/test_leakage.py::test_no_forbidden_features - AssertionError: forbidden columns in featu...
+1 failed, 8 passed in 0.27s
+```
+
+**Red test output** (`python -m pytest tests/ -q --tb=line`):
+
+```
+......F..........                                                        [100%]
+=================================== FAILURES ===================================
+E   AssertionError: forbidden columns in feature set: {'registered'}
+    assert not ({'atemp', 'cnt_lag_1', 'cnt_lag_7', 'cnt_roll_14', 'cnt_roll_7', 'dayofweek', ...} & {'casual', 'cnt', 'cnt_2d_bfr', 'days_since_2011', 'instant', 'registered', ...})
+/Users/terranchow/Desktop/dsc180a/bikeshare-open/tests/test_leakage.py:31: AssertionError: forbidden columns in feature set: {'registered'}
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_no_forbidden_features - AssertionError: fo...
+1 failed, 16 passed in 0.99s
+```
