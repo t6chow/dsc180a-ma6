@@ -1,4 +1,4 @@
-.PHONY: all data features train test clean model check-model
+.PHONY: all data features train transform test clean model check-model
 
 # --- The pipeline ----------------------------------------------------------
 all: data features train
@@ -11,6 +11,10 @@ features:
 
 train:
 	python -m src.train
+
+# Exercise 4, outside `all` so metrics.json stays the untransformed result.
+transform:
+	python -m src.transform
 
 test:
 	python -m pytest tests/ -q
