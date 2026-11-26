@@ -137,3 +137,9 @@ FAILED tests/test_leakage.py::test_rolling_mean_excludes_today - assert np.fl...
 
 Only one test catches this, and it checks a single row (`iloc[200]`) inside an
 `if` that would skip the assertion without failing if that row's window had a gap.
+
+**Fix:** restore `.shift(1)`. The hook was silent on the fix Edit, and
+`make test` gave `17 passed in 0.97s`.
+**Turns to fix: 2** (one Edit, one `make test`). The "Obtained" value is
+higher than "Expected", which points straight at today's count leaking into
+the window.
