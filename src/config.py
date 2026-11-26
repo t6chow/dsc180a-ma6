@@ -6,6 +6,7 @@ RAW = ROOT / "data" / "raw" / "bike_daily.csv"
 PROCESSED = ROOT / "data" / "processed" / "features.parquet"
 METRICS = ROOT / "reports" / "metrics.json"
 TRANSFORM_METRICS = ROOT / "reports" / "transform.json"
+COMPARE_METRICS = ROOT / "reports" / "compare.json"
 
 # Daily Capital Bikeshare counts (Fanaee-T & Gama). Canonical home:
 #   https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset
@@ -73,6 +74,10 @@ CLASSIFIED = FORBIDDEN | PASSTHROUGH_COLS | ENCODED_COLS | REDUNDANT_COLS
 # Temporal split: train on 2011, validate on H1 2012, test on H2 2012.
 TRAIN_END = "2011-12-31"
 VALID_END = "2012-06-30"
+
+# Hurricane Sandy (22 rides, in the test set) and the day after it, when
+# persistence predicts 22. src/compare.py reports MAE with these excluded.
+STORM_DAYS = ("2012-10-29", "2012-10-30")
 
 # Longest lag window in src/features.py (cnt_roll_14 needs 14 days). The
 # first LAG_WARMUP calendar days have no complete history and are dropped;

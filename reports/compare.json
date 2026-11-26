@@ -1,0 +1,47 @@
+{
+  "big_miss_threshold": 2000,
+  "valid": {
+    "ridge": {
+      "r2": 0.6919,
+      "mae": 763.2,
+      "median_ae": 634.0,
+      "n_big_miss": 6,
+      "max_err": 3462.0,
+      "mean_signed_err": -377.6
+    },
+    "persistence": {
+      "r2": 0.4507,
+      "mae": 900.6,
+      "median_ae": 638.5,
+      "n_big_miss": 18,
+      "max_err": 5597.0,
+      "mean_signed_err": -17.6
+    },
+    "n_days": 182,
+    "share_ridge_closer": 0.533
+  },
+  "test": {
+    "ridge": {
+      "r2": 0.6268,
+      "mae": 870.9,
+      "median_ae": 765.9,
+      "n_big_miss": 10,
+      "max_err": 4252.0,
+      "mean_signed_err": -394.6
+    },
+    "persistence": {
+      "r2": 0.5099,
+      "mae": 840.1,
+      "median_ae": 506.5,
+      "n_big_miss": 17,
+      "max_err": 4470.0,
+      "mean_signed_err": 16.1
+    },
+    "n_days": 184,
+    "share_ridge_closer": 0.44,
+    "mae_excl_storm": {
+      "ridge": 844.5,
+      "persistence": 819.0
+    }
+  }
+}

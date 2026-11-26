@@ -28,3 +28,16 @@ def test_untransformed_rows_match_metrics_json():
     valid = run()["valid"]
     for name in TRANSFORMED_MODELS:
         assert valid[f"{name}/none"] == metrics[name]["valid"]
+
+
+def test_compare_agrees_with_metrics_json():
+    """Requires `make all` first; the Ex 5 breakdown must start from the same
+    ridge and persistence scores as reports/metrics.json."""
+    from src.compare import run as compare_run
+
+    metrics = json.loads(METRICS.read_text())
+    res = compare_run()
+    for split in ("valid", "test"):
+        for name, key in (("ridge", "ridge"), ("persistence", "baseline_persistence")):
+            assert res[split][name]["r2"] == metrics[key][split]["r2"]
+            assert res[split][name]["mae"] == metrics[key][split]["mae"]

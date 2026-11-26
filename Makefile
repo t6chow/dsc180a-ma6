@@ -1,4 +1,4 @@
-.PHONY: all data features train transform test clean model check-model
+.PHONY: all data features train transform compare test clean model check-model
 
 # --- The pipeline ----------------------------------------------------------
 all: data features train
@@ -15,6 +15,10 @@ train:
 # Exercise 4, outside `all` so metrics.json stays the untransformed result.
 transform:
 	python -m src.transform
+
+# Exercise 5, also outside `all`.
+compare:
+	python -m src.compare
 
 test:
 	python -m pytest tests/ -q
