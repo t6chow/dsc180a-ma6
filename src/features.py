@@ -10,7 +10,7 @@ Run: python -m src.features
 import numpy as np
 import pandas as pd
 
-from src.config import FORBIDDEN, LAG_WARMUP, PROCESSED, TARGET
+from src.config import FORBIDDEN, PROCESSED, TARGET
 from src.ingest import load_raw
 
 WEATHER_ORDER = {"GOOD": 0, "MISTY": 1, "BAD": 2}
@@ -72,12 +72,14 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     # without it, cnt_roll_7 would contain today's count. -----------------
     # If you add a longer lag, raise LAG_WARMUP in src/config.py.
     out["cnt_lag_1"] = out[TARGET].shift(1)
-    out["cnt_lag_7"] = out[TARGET].shift(LAG_WARMUP)
+    # Literal 7, not LAG_WARMUP: tying it to the warm-up constant turned this
+    # into a 14-day lag when cnt_roll_14 raised LAG_WARMUP.
+    out["cnt_lag_7"] = out[TARGET].shift(7)
     # 7-day rolling mean of the 7 days prior (strictly before today).
     out["cnt_roll_7"] = out[TARGET].shift(1).rolling(7).mean()
-    # 14-day rolling mean of the 14 days prior. shift(1) aligns on calendar
-    # days so the 14-day window lands exactly on d-16..d-3; we then dropna
-    # for the first 14 rows where a full window is unavailable.
+    # 14-day rolling mean of the 14 days prior: shift(1) excludes today, so
+    # the window is d-14..d-1. The first 14 rows lack a full window and are
+    # dropped by dropna.
     out["cnt_roll_14"] = out[TARGET].shift(1).rolling(14).mean()
 
     return out.dropna().reset_index(drop=True)
