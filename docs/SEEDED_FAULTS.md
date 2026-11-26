@@ -202,3 +202,70 @@ Then restore the raise: `make test` gave `19 passed in 0.97s`.
 **Turns to fix: 4** (write tests, run them red, restore the raise, `make
 test`). Restoring the raise alone would take 2, but would leave the guard
 as untested as it was before the fault.
+
+## Fault 4: writing into `data/raw/` from Bash
+
+The repo's deny list (`.claude/settings.json`) has `Write(./data/raw/**)`
+and `Edit(./data/raw/**)`, but no Bash rule, so the premise is that
+`cp something data/raw/bike_daily.csv` gets past it. The real CSV was never
+modified (SHA-256 before and after the whole exercise:
+`a6bed1577f6e4de56dcfae6d8315985073cc0ad3446c8c99ed60c86a0b5ad9dc`).
+
+**In the real repo (Claude Code, this session):**
+
+1. Write tool to `data/raw/scratch_write.csv`, denied by the repo rule:
+   ```
+   File is in a directory that is denied by your permission settings.
+   ```
+2. Bash `cp data/raw/bike_daily.csv data/raw/scratch.csv` (a scratch file;
+   `bike_daily.csv` was only the source), denied:
+   ```
+   Permission to use Bash with command cd /Users/terranchow/Desktop/dsc180a/bikeshare-open; cp data/raw/bike_daily.csv data/raw/scratch.csv; [...] has been denied.
+   ```
+3. Bash `cd <clone> && cp edited.csv data/raw/bike_daily.csv`, meant for a
+   /tmp clone, blocked because the relative path was resolved against the
+   project:
+   ```
+   cp to '/Users/terranchow/Desktop/dsc180a/bikeshare-open/data/raw/bike_daily.csv' was blocked by a deny rule.
+   ```
+
+So in this Claude Code version the premise is only partly true. The
+`data/raw/**` rule was also applied to the destination of a parsed Bash
+`cp` (3), and denial 2 came from the session's permission layer. None of
+that protection is in the repo: it depends on the harness and on the
+session's permission mode. Writes the harness can't parse as a file target
+(`python -c`, a script, `make`) were not tested, and an agent run outside
+Claude Code (or a person) has no such check at all.
+
+**What the repo itself notices, shown in a throwaway clone**
+(`git clone` to `/tmp/f4-UM7G/clone`). The "fault" deletes one inconvenient
+row, 2012-10-29 (Hurricane Sandy, 22 rides, in the test set), and copies the
+result over the raw file:
+
+```
+$ cp /tmp/f4-UM7G/edited.csv /tmp/f4-UM7G/clone/data/raw/bike_daily.csv; echo "cp exit: $?"; git -C /tmp/f4-UM7G/clone status --short
+cp exit: 0
+ M data/raw/bike_daily.csv
+
+$ python -m pytest tests/ -q --tb=line
+...................                                                      [100%]
+19 passed in 1.00s
+$ python -m src.ingest
+OK ingest: 727 rows, 2011-01-03 -> 2012-12-31
+rows built: 685 | 2012-10-29 present: False
+```
+
+Nothing notices. `load_raw` only checks required columns and that there
+are at least 700 rows. The row-loss test counts the deleted day as a
+genuinely missing day and widens its allowance. The worst residual in the
+test set is gone, so test scores would improve.
+
+**What would catch it.** A deny rule can only stop the write routes the
+harness recognises, and only inside Claude Code. The dependable check is on
+the data, not the tool: pin the raw file's SHA-256 in `src/config.py` and
+fail the test suite (and so the hook and `make test`) whenever the bytes
+change, by any route, agent or human. It catches the change after the fact
+rather than preventing it, but nothing downstream can trust a modified file
+without it failing. `git status` on `data/raw/` does the same job in review
+but nothing enforces it. A PreToolUse Bash hook matching `data/raw` would
+block earlier, but it is easy to evade with variables, `cd`, or `python -c`.
