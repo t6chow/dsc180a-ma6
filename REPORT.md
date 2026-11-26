@@ -92,8 +92,10 @@ validation only, and it must beat untransformed ridge (a tie is not enough).
 | ridge / ratio | 0.4966 | 987.7 |
 | hgb / ratio | 0.7118 | 741.9 |
 
-On validation, `hgb / ratio` beats the bar by +0.0199 R^2 and 21.3 MAE. The
-decision was to **stay with untransformed ridge**, recorded (c87ebe3) before
+On validation, `hgb / ratio` beats the bar by +0.0199 R^2 and 21.3 MAE, so it
+meets the rule. The decision was still to **stay with untransformed ridge**:
+the +0.02 R^2 edge is small, comes from a single validation split, and doesn't
+justify a less interpretable model. That decision was recorded (c87ebe3) before
 any transform was scored on test. Then `hgb / ratio` was scored on test once,
 as a finding (a3b05a3):
 
