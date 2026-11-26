@@ -9,12 +9,18 @@ rides) from calendar, weather, and lagged-demand features.
 - `make train` - fit models, write `reports/metrics.json`
 - `make test` - pytest; run this before claiming anything works
 - `make all` - the three pipeline stages in order
+- `make transform` / `make compare` - Ex 4 / Ex 5 analyses, outside `all`
+  (write `reports/transform.json`, `reports/compare.json`)
+- `/run-pipeline <commit>` - validation-only before/after delta vs a commit
 
 ## Non-negotiable rules
 - **Never** put `casual` or `registered` in a feature set:
   `casual + registered == cnt` exactly. `src/config.py` lists these and the
   other excluded columns (`cnt_2d_bfr`, raw time indexes) with the reason
   for each. Derive feature lists from `FORBIDDEN`; never hand-type them.
+  Every raw column must be in exactly one `src/config.py` set.
+- **Never** write to `data/raw/`, by any tool. `RAW_SHA256` pins the file;
+  change it only with a `docs/DECISIONS.md` line saying why.
 - **Never** split this data randomly. Use `src.train.temporal_split`.
   Train = 2011, valid = H1 2012, test = H2 2012. Never tune on test.
 - Any new lag or rolling feature must be built on a gap-free calendar
@@ -39,3 +45,7 @@ rides) from calendar, weather, and lagged-demand features.
   cannot extrapolate to 2012. That is the headline result, not an error.
 - 2012-10-29 (Hurricane Sandy, 22 rides) is in the test set. Expect it in
   any residual plot.
+- Weather features are same-day observations, so scores are a nowcast
+  (weather known), not day-ahead accuracy. Say so when reporting them.
+- Lag offsets are literals (`shift(7)`), never `LAG_WARMUP`: tying them
+  together once turned `cnt_lag_7` into a 14-day lag with tests green.
