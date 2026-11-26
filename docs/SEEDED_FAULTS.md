@@ -143,3 +143,39 @@ Only one test catches this, and it checks a single row (`iloc[200]`) inside an
 **Turns to fix: 2** (one Edit, one `make test`). The "Obtained" value is
 higher than "Expected", which points straight at today's count leaking into
 the window.
+
+## Fault 3: `encode_weather`'s raise removed
+
+**Change** (`src/features.py`, `encode_weather`):
+
+```diff
+     unknown = set(known.unique()) - set(WEATHER_ORDER)
+-    if unknown:
+-        raise ValueError(f"unmapped weather labels: {sorted(unknown)}")
+     return series.map(WEATHER_ORDER).astype(float)
+```
+
+**Hook stderr:** none. The hook ran after the Edit and every leakage test
+passed, so nothing was returned to the agent.
+
+**Test output** (`python -m pytest tests/ -q --tb=line`): **green**.
+
+```
+.................                                                        [100%]
+17 passed in 0.99s
+```
+
+This is the finding. The raw file only contains GOOD / MISTY / BAD, so the
+raise never fires on real data, and no test calls `encode_weather` with
+anything else. The guard was untested. What it protects against, shown with
+the fault in place by relabelling BAD as `STORM` in memory (the file on disk
+was not touched):
+
+```
+BAD days in raw: 20 | rows built (clean): 700
+rows built with BAD relabelled STORM: 680 | BAD/STORM rows left: 0 | no error raised
+```
+
+All 20 bad-weather days disappear through `.map()` -> NaN -> `dropna()`, with
+no error. `test_only_expected_rows_are_dropped` would not catch it either: it
+runs on the real file, where every label is known.
