@@ -132,11 +132,13 @@ MAE 763.2 vs 900.6). On test the metrics disagree: ridge wins R^2 (0.6268 vs
 
 So ridge does not beat persistence outright. It beats it on R^2, on validation
 and on bad days, and loses on ordinary days. With no specific use case, weighing
-R^2 and MAE together, the decision is to **deploy ridge**. For it: ridge is
-ahead of persistence on three of the four headline numbers, and has fewer large
-misses. Against it: persistence is 30.8 rides better on test MAE, costs nothing
-to run, and has no bias. Ridge's bias of -394.6 rides a day is the known cost; a
-target relative to recent demand, as in Exercise 4, is one way to address it.
+R^2 and MAE together, the decision is to **deploy ridge**. Ridge tracks the
+large swings (R^2 0.63 vs 0.51, 10 vs 17 misses over 2,000 rides), which matter
+more for staffing and rebalancing than a 31-ride gap in typical error. The cost
+is accepted, not hidden: persistence is 30.8 rides better on test MAE, costs
+nothing to run, and has no bias. Ridge's bias of -394.6 rides a day is the known
+cost; a target relative to recent demand, as in Exercise 4, is one way to
+address it.
 
 ## Attribution
 
