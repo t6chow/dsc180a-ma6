@@ -153,6 +153,8 @@ Model: qwen3.5:9b via Ollama (64k context) wrote the Exercise 1 failing test; sw
 - `tests/test_contract.py`: `test_every_raw_column_is_classified` (f1c9608),
   `test_unknown_weather_label_raises`, `test_relabelled_weather_fails_the_build`
   (bcc755c), `test_raw_csv_is_unmodified` (c758fd6).
+- `.claude/hooks/protect_raw.sh` (PreToolUse Bash hook), its `settings.json`
+  registration, and `tests/test_hooks.py`.
 - `src/transform.py`, `tests/test_transform.py`, `src/compare.py`, the
   `transform` and `compare` Makefile targets.
 - `.claude/skills/run-pipeline/` (`SKILL.md`, `delta.py`).
@@ -172,7 +174,7 @@ Model: qwen3.5:9b via Ollama (64k context) wrote the Exercise 1 failing test; sw
 | Keep `cnt_roll_14` despite the HGB drop | "KEEP `cnt_roll_14`" |
 | Classify every raw column in three allowed sets | "Classify every raw column" |
 | Fault 3: test the weather guard, not just restore it | "Seeded fault 3" |
-| Fault 4: SHA-256 pin rather than a Bash hook | "Seeded fault 4" |
+| Fault 4: both, hook chosen by author (PreToolUse Bash hook + SHA-256 pin) | "Seeded fault 4" |
 | Leave `test_rolling_mean_excludes_today` as is | "Leave `test_rolling_mean_excludes_today`" |
 | Keep same-day weather; report as a nowcast | "`agent/audit.py` (claude-opus-5-5) flagged" |
 | Ex 3 verdict on Gavin's repo | "Ex 3 peer audit" |

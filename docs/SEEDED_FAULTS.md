@@ -269,9 +269,10 @@ fail `make test` whenever the bytes change, by any route, agent or human.
 rather than preventing it, but nothing downstream can trust a modified file
 without it failing. `git status` on `data/raw/` does the same job in review
 but nothing enforces it. A PreToolUse Bash hook matching `data/raw` would
-block earlier, but it is easy to evade with variables, `cd`, or `python -c`.
+block earlier, but it is easy to evade with variables or `python -c` (Fix B
+below is such a hook).
 
-**Fix (implemented):** `RAW_SHA256` in `src/config.py` and
+**Fix A, detection:** `RAW_SHA256` in `src/config.py` and
 `test_raw_csv_is_unmodified` in `tests/test_contract.py`. Real repo:
 `make test` gives `20 passed in 1.03s`. Red run with the fix copied into the
 tampered clone:
@@ -295,3 +296,57 @@ change but does not prevent it, and it runs on `make test`, not on the
 hook, so it relies on the CLAUDE.md rule to run `make test` before claiming
 anything works. **Turns to fix: 4** (config edit, test edit, imports + green
 run, red run in the clone).
+
+**Fix B, prevention: a PreToolUse Bash hook (chosen by the author).**
+`.claude/hooks/protect_raw.sh`, registered in `.claude/settings.json` under
+`PreToolUse` with matcher `Bash`, runs before every Bash command. It exits 2
+(the command never runs) when any of these resolves into `data/raw/`:
+- a `cp` / `mv` / `install` / `rsync` / `ln` destination
+- a `tee` target
+- a `>` / `>>` redirect
+
+It follows a leading `cd` and normalises `..`. Reads from `data/raw/` pass.
+`tests/test_hooks.py` feeds it 8 write forms (all blocked) and 6 read or other
+commands (all allowed). `make test`: `40 passed in 5.61s`.
+
+Live run in this Claude Code session. The target is a probe file, not the CSV:
+
+```
+$ echo "seeded fault 4 probe" > data/raw/hook_probe.txt
+PreToolUse:Bash hook error: [${CLAUDE_PROJECT_DIR}/.claude/hooks/protect_raw.sh]: BLOCKED by .claude/hooks/protect_raw.sh: this Bash command writes into data/raw/, which is read-only (CLAUDE.md; seeded fault 4).
+  write target: redirect > data/raw/hook_probe.txt
+  The raw CSV is pinned by RAW_SHA256. Write derived data under data/processed/.
+```
+
+Afterwards `ls data/raw/` showed only `bike_daily.csv`, with its SHA-256
+unchanged (`a6bed157...b5ad9dc`).
+
+A false positive turned up straight away. The hook scans the whole command
+text, so the next command, a `python3 - <<'EOF'` heredoc that only edited this
+file, was blocked because its body quoted the probe line above:
+
+```
+PreToolUse:Bash hook error: [${CLAUDE_PROJECT_DIR}/.claude/hooks/protect_raw.sh]: BLOCKED by .claude/hooks/protect_raw.sh: this Bash command writes into data/raw/, which is read-only (CLAUDE.md; seeded fault 4).
+  write target: redirect > data/raw/hook_probe.txt
+  write target: redirect > data/raw/hook_probe.txt
+  The raw CSV is pinned by RAW_SHA256. Write derived data under data/processed/.
+```
+
+It fired again on the commit for this fix. The hook splits commands on
+newlines, so a heredoc commit message with a line starting with the word "tee"
+and later naming `data/raw/` was read as a `tee` command:
+
+```
+PreToolUse:Bash hook error: [${CLAUDE_PROJECT_DIR}/.claude/hooks/protect_raw.sh]: BLOCKED by .claude/hooks/protect_raw.sh: this Bash command writes into data/raw/, which is read-only (CLAUDE.md; seeded fault 4).
+  write target: tee -> data/raw/
+  The raw CSV is pinned by RAW_SHA256. Write derived data under data/processed/.
+```
+
+Both false positives err toward blocking. The cost is a retry, either with the
+Edit tool or with the commit message passed as a file (`git commit -F`).
+
+The two fixes cover different gaps. The hook stops the common forms before
+they run, but it is a pattern match: a path in a variable, a `python -c`
+write, or a script that writes the file gets past it. The SHA-256 pin cannot
+stop anything, but `make test` fails on any change to the bytes, whatever
+made it.

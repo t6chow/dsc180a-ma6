@@ -19,8 +19,9 @@ rides) from calendar, weather, and lagged-demand features.
   other excluded columns (`cnt_2d_bfr`, raw time indexes) with the reason
   for each. Derive feature lists from `FORBIDDEN`; never hand-type them.
   Every raw column must be in exactly one `src/config.py` set.
-- **Never** write to `data/raw/`, by any tool. `RAW_SHA256` pins the file;
-  change it only with a `docs/DECISIONS.md` line saying why.
+- **Never** write to `data/raw/`, by any tool. A PreToolUse hook blocks Bash
+  writes; `RAW_SHA256` pins the file. Change it only with a
+  `docs/DECISIONS.md` line saying why.
 - **Never** split this data randomly. Use `src.train.temporal_split`.
   Train = 2011, valid = H1 2012, test = H2 2012. Never tune on test.
 - Any new lag or rolling feature must be built on a gap-free calendar
