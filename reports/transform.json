@@ -32,5 +32,32 @@
       "r2": 0.7118,
       "mae": 741.9
     }
-  }
+  },
+  "test": {
+    "ridge/none": {
+      "r2": 0.6268,
+      "mae": 870.9
+    },
+    "hgb/none": {
+      "r2": -0.6534,
+      "mae": 2087.9
+    },
+    "ridge/ratio": {
+      "r2": 0.1682,
+      "mae": 1370.4
+    },
+    "hgb/ratio": {
+      "r2": 0.5962,
+      "mae": 879.4
+    },
+    "baseline_mean": {
+      "r2": -2.0333,
+      "mae": 2793.1
+    },
+    "baseline_persistence": {
+      "r2": 0.5099,
+      "mae": 840.1
+    }
+  },
+  "test_transform": "ratio"
 }
