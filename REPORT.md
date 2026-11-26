@@ -3,7 +3,7 @@
 Daily ride counts (`cnt`), 2011-01-03 to 2012-12-31 (728 rows; the mirror is
 missing 2011-03-10). Train = 2011, validation = H1 2012, test = H2 2012, split
 by date. Every number below is copied from a committed file named next to it.
-From a clean clone (checked at 5738bf9), `make all` regenerates
+From a clean clone (checked at f418cfe), `make all` regenerates
 `reports/metrics.json` byte-identically, as do `make compare` for
 `reports/compare.json` and `python -m src.transform --test ratio` for
 `reports/transform.json`. Plain `make transform` writes the validation section only.
