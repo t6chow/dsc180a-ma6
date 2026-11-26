@@ -19,6 +19,35 @@ def feats(raw):
     return build_features(raw)
 
 
+def test_every_raw_column_is_classified(raw):
+    """Every column in the raw CSV must be classified in src/config.py.
+
+    FORBIDDEN is a blocklist: a column nobody has thought about is allowed
+    by default, and feature_columns() passes any new numeric column straight
+    to the model. If the mirror gains a column (say, another restatement of
+    cnt), this fails until someone decides which set it belongs in.
+    """
+    from src import config
+
+    # getattr default: a set missing from config.py should fail as
+    # "unclassified columns", not as an AttributeError.
+    sets = {
+        name: getattr(config, name, set())
+        for name in (
+            "LEAKAGE_COLS", "TIME_INDEX_COLS", "UNVERIFIED_COLS",
+            "PASSTHROUGH_COLS", "ENCODED_COLS", "REDUNDANT_COLS",
+        )
+    }
+    classified = set().union(*sets.values())
+    unclassified = set(raw.columns) - classified
+    assert not unclassified, f"raw columns not classified in config.py: {sorted(unclassified)}"
+    names = list(sets)
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            assert not (sets[a] & sets[b]), f"{a} and {b} overlap: {sets[a] & sets[b]}"
+    assert config.CLASSIFIED == classified, "CLASSIFIED out of sync with its sets"
+
+
 def test_calendar_is_complete_before_lagging(raw):
     """The reindexed frame must have no gaps, or the lags are wrong."""
     grid = reindex_to_calendar(raw)
@@ -31,8 +60,9 @@ def test_only_expected_rows_are_dropped(raw, feats):
 
     Accounting: the first LAG_WARMUP days have no complete history. Each
     absent calendar day m costs the LAG_WARMUP rows after it (cnt_lag_1 is
-    NaN on m+1, cnt_roll_7 is NaN on m+1..m+7, cnt_lag_7 on m+7; their
-    union is 7 rows). Day m itself was never in `raw`, so it is not a loss.
+    NaN on m+1, cnt_roll_7 on m+1..m+7, cnt_lag_7 on m+7, cnt_roll_14 on
+    m+1..m+14; their union is 14 rows = LAG_WARMUP). Day m itself was never
+    in `raw`, so it is not a loss.
     The bound is exact for the current feature set; add a longer lag and
     LAG_WARMUP in src/config.py must grow with it.
     """
