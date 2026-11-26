@@ -4,7 +4,9 @@ import pytest
 from sklearn.metrics import r2_score
 
 from src.config import LAG_WARMUP, TARGET
-from src.features import build_features, feature_columns, reindex_to_calendar
+from src.features import (
+    build_features, encode_weather, feature_columns, reindex_to_calendar,
+)
 from src.ingest import load_raw
 from src.train import MODELS, temporal_split
 
@@ -71,6 +73,22 @@ def test_only_expected_rows_are_dropped(raw, feats):
     allowed_loss = LAG_WARMUP + LAG_WARMUP * missing_days
     lost = len(raw) - len(feats)
     assert lost <= allowed_loss, f"lost {lost} rows; expected at most {allowed_loss}"
+
+
+def test_unknown_weather_label_raises():
+    """The raw file only has GOOD/MISTY/BAD, so nothing else exercises this
+    guard. Without it, an unseen label maps to NaN and dropna() deletes the
+    row silently (seeded fault 3)."""
+    with pytest.raises(ValueError, match="STORM"):
+        encode_weather(pd.Series(["GOOD", "STORM"]))
+
+
+def test_relabelled_weather_fails_the_build(raw):
+    """End to end: a mirror that renamed BAD must stop the build, not
+    quietly lose all 20 bad-weather days."""
+    relabelled = raw.assign(weather=raw.weather.replace({"BAD": "STORM"}))
+    with pytest.raises(ValueError, match="STORM"):
+        build_features(relabelled)
 
 
 def test_beats_the_mean_baseline(feats):

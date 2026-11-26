@@ -179,3 +179,26 @@ rows built with BAD relabelled STORM: 680 | BAD/STORM rows left: 0 | no error ra
 All 20 bad-weather days disappear through `.map()` -> NaN -> `dropna()`, with
 no error. `test_only_expected_rows_are_dropped` would not catch it either: it
 runs on the real file, where every label is known.
+
+**Fix:** first add two tests to `tests/test_contract.py`:
+`test_unknown_weather_label_raises` (unit) and
+`test_relabelled_weather_fails_the_build` (BAD relabelled as STORM must stop
+`build_features`). Against the fault they fail, so the guard is now tested:
+
+```
+...FF..............                                                      [100%]
+=================================== FAILURES ===================================
+E   Failed: DID NOT RAISE ValueError
+/Users/terranchow/Desktop/dsc180a/bikeshare-open/tests/test_contract.py:82: Failed: DID NOT RAISE ValueError
+E   Failed: DID NOT RAISE ValueError
+/Users/terranchow/Desktop/dsc180a/bikeshare-open/tests/test_contract.py:90: Failed: DID NOT RAISE ValueError
+=========================== short test summary info ============================
+FAILED tests/test_contract.py::test_unknown_weather_label_raises - Failed: DI...
+FAILED tests/test_contract.py::test_relabelled_weather_fails_the_build - Fail...
+2 failed, 17 passed in 0.97s
+```
+
+Then restore the raise: `make test` gave `19 passed in 0.97s`.
+**Turns to fix: 4** (write tests, run them red, restore the raise, `make
+test`). Restoring the raise alone would take 2, but would leave the guard
+as untested as it was before the fault.
